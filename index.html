@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transaction Import/Export</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: auto;
+            text-align: center;
+        }
+
+        input[type="file"] {
+            margin: 20px 0;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .message {
+            margin-top: 20px;
+            color: green;
+        }
+
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Transaction Import/Export</h1>
+        <input type="file" id="fileInput" accept=".csv" />
+        <button id="importButton">Import Transactions</button>
+        <button id="exportButton">Export Transactions</button>
+        <div class="message" id="message"></div>
+        <div class="error" id="error"></div>
+    </div>
+
+    <script>
+        document.getElementById('importButton').addEventListener('click', async () => {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert('Please select a CSV file to upload.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('http://localhost:3000/api/v1/import', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const message = await response.text();
+                    document.getElementById('message').innerText = message;
+                    document.getElementById('error').innerText = '';
+                } else {
+                    const errorMessage = await response.text();
+                    document.getElementById('error').innerText = 'Error: ' + errorMessage;
+                    document.getElementById('message').innerText = '';
+                }
+            } catch (error) {
+                document.getElementById('error').innerText = 'Error: ' + error.message;
+                document.getElementById('message').innerText = '';
+            }
+        });
+
+        document.getElementById('exportButton').addEventListener('click', async () => {
+            try {
+                const response = await fetch('http://localhost:3000/api/v1/export', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'transactions.csv';
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    document.getElementById('message').innerText = 'Exporting transactions...';
+                    document.getElementById('error').innerText = '';
+                } else {
+                    const errorMessage = await response.text();
+                    document.getElementById('error').innerText = 'Error: ' + errorMessage;
+                    document.getElementById('message').innerText = '';
+                }
+            } catch (error) {
+                document.getElementById('error').innerText = 'Error: ' + error.message;
+                document.getElementById('message').innerText = '';
+            }
+        });
+    </script>
+</body>
+
+</html>
